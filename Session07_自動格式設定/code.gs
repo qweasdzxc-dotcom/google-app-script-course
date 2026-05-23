@@ -177,7 +177,60 @@ function 背景框線設定() {
  */
 function 自動生成格式表格() {
   try {
+    var html = HtmlService.createHtmlOutputFromFile('ThemeDialog')
+        .setWidth(360)
+        .setHeight(280)
+        .setTitle('🎨 選擇報表配色主題');
+    SpreadsheetApp.getUi().showModalDialog(html, '🎨 選擇報表配色主題');
+  } catch (錯誤) {
+    Logger.log("❌ 錯誤：" + 錯誤.message);
+    SpreadsheetApp.getUi().alert("❌ 錯誤：" + 錯誤.message);
+  }
+}
+
+/**
+ * 根據使用者選擇的主題，套用配色並生成專業格式表格
+ * @param {string} 主題名稱 "藍色" | "綠色" | "紫色"
+ */
+function 自動生成格式表格套用(主題名稱) {
+  try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // 定義配色方案
+    var 配色 = {
+      "藍色": {
+        titleColor: "#0d47a1",
+        headerBg: "#1e88e5",
+        headerFontColor: "#ffffff",
+        zebraEven: "#e3f2fd",
+        zebraOdd: "#ffffff",
+        totalBg: "#bbdefb",
+        borderColor: "#90caf9",
+        totalBorderColor: "#0d47a1"
+      },
+      "綠色": {
+        titleColor: "#1b5e20",
+        headerBg: "#43a047",
+        headerFontColor: "#ffffff",
+        zebraEven: "#e8f5e9",
+        zebraOdd: "#ffffff",
+        totalBg: "#c8e6c9",
+        borderColor: "#a5d6a7",
+        totalBorderColor: "#1b5e20"
+      },
+      "紫色": {
+        titleColor: "#4a148c",
+        headerBg: "#8e24aa",
+        headerFontColor: "#ffffff",
+        zebraEven: "#f3e5f5",
+        zebraOdd: "#ffffff",
+        totalBg: "#e1bee7",
+        borderColor: "#ce93d8",
+        totalBorderColor: "#4a148c"
+      }
+    };
+
+    var theme = 配色[主題名稱] || 配色["藍色"];
 
     // 建立新的「格式化報表」工作表
     var 表名 = "格式化報表";
@@ -186,9 +239,9 @@ function 自動生成格式表格() {
 
     // === 表格標題 ===
     sheet.getRange("A1:F1").merge();
-    sheet.getRange("A1").setValue("📊 2026年度部門預算報表");
+    sheet.getRange("A1").setValue("📊 2026年度部門預算報表 (" + 主題名稱 + "主題)");
     sheet.getRange("A1").setFontSize(18).setFontWeight("bold")
-         .setHorizontalAlignment("center").setFontColor("#1a237e");
+         .setHorizontalAlignment("center").setFontColor(theme.titleColor);
     sheet.setRowHeight(1, 50);
 
     // 副標題
@@ -202,8 +255,8 @@ function 自動生成格式表格() {
     var 標題 = [["部門", "Q1預算", "Q2預算", "Q3預算", "Q4預算", "年度合計"]];
     sheet.getRange("A4:F4").setValues(標題);
     sheet.getRange("A4:F4")
-      .setBackground("#1a237e")
-      .setFontColor("#000000")
+      .setBackground(theme.headerBg)
+      .setFontColor(theme.headerFontColor)
       .setFontWeight("bold")
       .setFontSize(11)
       .setHorizontalAlignment("center");
@@ -228,15 +281,13 @@ function 自動生成格式表格() {
     sheet.getRange(5, 1, 完整資料.length, 6).setValues(完整資料);
 
     // === 資料列格式 ===
-    var 資料範圍 = sheet.getRange(5, 1, 完整資料.length, 6);
-
     // 交替行背景色（斑馬紋）
     for (var i = 0; i < 完整資料.length; i++) {
       var 行範圍 = sheet.getRange(5 + i, 1, 1, 6);
       if (i % 2 === 0) {
-        行範圍.setBackground("#f5f5f5");
+        行範圍.setBackground(theme.zebraEven);
       } else {
-        行範圍.setBackground("#ffffff");
+        行範圍.setBackground(theme.zebraOdd);
       }
     }
 
@@ -259,16 +310,16 @@ function 自動生成格式表格() {
     }
 
     sheet.getRange(合計列, 1, 1, 6)
-      .setBackground("#e8eaf6")
+      .setBackground(theme.totalBg)
       .setFontWeight("bold")
       .setBorder(true, false, true, false, false, false,
-        "#1a237e", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+        theme.totalBorderColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
     sheet.getRange(合計列, 2, 1, 5).setNumberFormat("NT$#,##0");
 
     // === 整體框線 ===
     sheet.getRange(4, 1, 完整資料.length + 2, 6)
       .setBorder(true, true, true, true, true, true,
-        "#bdbdbd", SpreadsheetApp.BorderStyle.SOLID);
+        theme.borderColor, SpreadsheetApp.BorderStyle.SOLID);
 
     // === 欄寬設定 ===
     sheet.setColumnWidth(1, 100);
@@ -279,12 +330,14 @@ function 自動生成格式表格() {
     // 凍結標題
     sheet.setFrozenRows(4);
 
-    Logger.log("✅ 格式化報表已生成！");
-    SpreadsheetApp.getUi().alert("✅ 專業格式報表已生成！\n請查看「格式化報表」工作表。");
+    Logger.log("✅ 格式化報表已生成（" + 主題名稱 + "主題）！");
+    SpreadsheetApp.getUi().alert("✅ 專業格式報表已生成！\n請查看「格式化報表」工作表（已套用" + 主題名稱 + "主題）。");
 
+    return { success: true, message: "報表已生成" };
   } catch (錯誤) {
     Logger.log("❌ 錯誤：" + 錯誤.message);
     SpreadsheetApp.getUi().alert("❌ 錯誤：" + 錯誤.message);
+    return { success: false, message: 錯誤.message };
   }
 }
 
